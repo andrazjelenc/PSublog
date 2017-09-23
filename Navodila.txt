@@ -1,0 +1,200 @@
+#########################################
+#######   PROLOG ZA KRIPTOGRAFE  ######## 
+#########################################
+    Verzija dokumenta: 	V1 -  6. 7. 2017
+						V2 - 23. 9. 2017
+	Avtor: Andraž Jelenc
+	       jelenc.andraz@gmail.com
+#########################################
+
+"Knowledge is power..." by Kofi Annan
+
+
+#########################################
+1. Okolje
+#########################################
+
+Interpreter: http://www.swi-prolog.org
+Program:     https://github.com/andrazjelenc/PSublog
+Slovar:		 vos/andraz/wordlists/*.pl
+
+Po zagonu SWI-Prolog interpreterja v
+meniju pod "File" izberemo "Consult..."
+ter izberemo slovar, nato pa še program
+(vrstni red ni pomemben).
+
+Če slovar/program kasneje popravimo ga
+v interpreterju osvežimo z "File" in
+nato "Reload modified file". Načeloma
+se mora izpisati zelena vrstica, vse
+ostale možnosti lahko, ne pa nujno,
+kažejo na napako.
+
+POMEMBNO: Če naknadno uvozimo slovar iz
+druge datoteke, bo prejšni slovar izbrisan
+iz Prologovega spomina in ga ne bo moč
+uporabljati.
+To se da popraviti (pokvariti), ampak trpi 
+hitrost izvajanja programa.
+
+
+##########################################
+2. Kratek uvod
+##########################################
+
+Programski jezik uporablja malo drugačen
+miselni pristop. Namesto, da bi opisali
+postopek programa, opišemo obliko rešitve.
+Tako Prolog ne pozna while zanke, ampak
+uporablja rekurziven pristop.
+
+Jedro programa sestavljajo trditve, ki jih
+zapišemo kot predikate. Paziti moramo, da
+se imena predikatov in entitet začnejo z
+malo začetnico. Saj velike začetnice
+predstavljajo spremenljivke.
+
+Zgled:
+moski(jan).
+zenska(tina).
+oce(jan, tina).
+
+Ko trditve uvozimo v interpreter. V našem
+primeru trditve zapišemo v slovar v obliki:
+
+w([p,r,o,l,o,g]).
+w([j,e]).
+w([s,u,p,e,r]).
+
+Kjer predikat w predstavlja besedo.
+
+V interpreterju lahko tako postavimo
+vprašanja, kjer namesto entitet uporabimo
+spremenljivke.
+
+?- moski(X).
+vrne: X=jan
+Če želimo naslednjo rešitev vnesemo podpičje.
+
+?- oce(jan, maja).
+   false
+Saj v trditvah nismo nikjer navedli zveze.
+
+?- oce(jan, Y).
+   Y=tina;
+   false
+Obstaja le ena rešitev, Y= tina.
+
+Zahteve lahko združujemo z uporabo
+konjunkcije in disjunkcije. Konjunkcijo
+predstavimo z vejico(,) ter disjunkcijo
+z podpičjem(;)
+Pri tem veljajo vsa logična pravila
+diskretne matematike. Prioritete lahko
+spremenimo z oklepaji "(" in ")"
+
+Konec pa označimo z piko(.)
+
+?- moski(X), oce(X, Y).
+Poišče vse pare, ki zadoščajo, da
+X je moški in X oče osebe Y
+
+?- zenska(X), oce(jan, X).
+Poišče vse janove hčerke.
+
+V našem primeru nas zanima spodnj poizvedbe:
+
+?- w([A,B,C]), w([C,A]), w([B,j]).
+Tukaj iščemo nabore spremenljivk A, B in C,
+tako, da obstajajo zgornje besed. Opazimo,
+da smo pri zadnji besedi zahtevali, da se
+konča s fiksno črko j.
+
+Pri tem nikjer ne zahtevamo, da so
+spremenljivke A, B in C med seboj različne.
+Zato moramo dodati še pogoj:
+alldif([A,B,C])
+
+Tako dobimo celotno poizvedbo:
+?- w([A,B,C]), w([C,A]), w([B,j]), alldif([A,B,C,j]).
+
+Opazimo, da smo v seznam dodali tudi črko j,
+in s tem zahtevali, da so spremenljivke
+paroma različne ter niso enake črki j.
+
+
+######################################
+2. Generiranje vseh možnosti
+#######################################
+
+Poleg predikata alldif je v datoteki 
+PSublog.pl pripravljen tudi sistem za
+generiranje vseh možnosti v datoteko,
+za nadaljno analizo.
+
+Pogumno odpremo datoteko in čist spodaj
+opazimo predikat program, ki je definiran
+kot konjunkcija treh zahtev.
+
+Pustimo detajle pri miru in si oglejmo 
+kaj spreminjamo in kako zaženemo sistem.
+
+# ZAGON
+Ko enkrat v SWI Prolog uvozimo slovar in
+program, sistem zaženemo tako, da v interpreter
+vpišemo:
+?- program.
+
+Ko se program izteče interpreter vrne
+vrednost true.
+
+# POPRAVLJE
+V predikatu "program" popravljamo samo
+pot do datoteke v katero naj izpisu rešitve.
+
+V predikatu solution pa imamo malo več
+svobode.
+
+Kot F1, F2,...Fn navedemo zaporedja črk,
+za katera želimo, da predstavljajo logične
+enote iz slovarja (besede, začetki besed...)
+Nato za vsako spremenljivko zahtevamo udejanjenje
+predvidene enote:
+	word - samostojna beseda
+	in_word - del besede
+	prefix - začetek besede
+	sufix - konec besede
+Vse enote kot prvi argument sprejmejo seznam
+znakov, kot drugi argument pa vrnejo besedo,
+na kateri se je enota trenutno udejanila.
+
+Nato iz vseh spremenljivk F1, F2, ... Fn
+izluščimo različne spremenljivke in konstante,
+ter zahtevamo, da so vse različne. Tako znaka
+A in B ne morata predstavljati enakega znaka.
+Prav tako ne morata predstavljati že nastavljenih
+konstant v spremenljivkah.
+
+
+Sedaj lahko dodamo še omejitev, kjer določeno 
+spremenljivko zapremo v določeno podmnožico črk.
+
+Zgled:
+member(A, [a,e,i,o]),
+member(B, [a,i,o])
+
+Tako smo določili, da mora biti spremenljivka
+A iz nabora a, e, i in o. Spremenljivka B
+pa iz nabora a, i, o.
+
+Prav tako, lahko kakšen nabor izločimo:
+not(member(C, [a,e,i]))
+s čimer zahtevamo, da spremenljivka C
+ni črka iz podanega seznama.
+
+Predikat join_words([W1,W2,...,Wn], Solution)
+pa nam na koncu posamezne besede zlepi skupaj
+in predstavi kot enotno rešitev.
+
+
+############################################
